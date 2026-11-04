@@ -48,7 +48,7 @@ public class UserController : ControllerBase
 
         if(_dapper.ExecuteSql(sql, sqlParam, CommandType.StoredProcedure))
         {
-            return Ok();
+            return Ok(new {message = "200 OK"});
         }
 
         throw new Exception("Failed to upsert user!");
