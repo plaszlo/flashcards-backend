@@ -12,15 +12,17 @@ public class DataContextDapper
         _config = config;
     }
 
-    public IEnumerable<T> LoadData<T>(string sql)
+    public IEnumerable<T> LoadData<T>(string sql, object parameters, CommandType commandType = CommandType.Text)
     {
-        IDbConnection dbConnection = new SqlConnection(_config.GetConnectionString("DefaultConnection"));
-        return dbConnection.Query<T>(sql);
+        using IDbConnection dbConnection = new SqlConnection(_config.GetConnectionString("DefaultConnection"));
+
+        return dbConnection.Query<T>(sql, parameters, commandType: commandType);
     }
 
-    public T LoadDataSingle<T>(string sql)
+    public bool ExecuteSql(string sql, object parameters, CommandType commandType = CommandType.Text)
     {
-        IDbConnection dbConnection = new SqlConnection(_config.GetConnectionString("DefaultConnection"));
-        return dbConnection.QuerySingle<T>(sql);
+        using IDbConnection dbConnection = new SqlConnection(_config.GetConnectionString("DefaultConnection"));
+        
+        return dbConnection.Execute(sql, parameters, commandType: commandType) > 0;
     }
 }
