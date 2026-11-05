@@ -7,22 +7,19 @@ builder.Services.AddControllers();
 
 builder.Services.AddOpenApi();
 
-builder.Services.AddCors((options) =>
+builder.Services.AddCors(options =>
 {
-    options.AddPolicy("DevCors", (corsBuilder) =>
-        {
-            corsBuilder.WithOrigins("http://localhost:5173")
-                .AllowAnyMethod()
-                .AllowAnyHeader()
-                .AllowCredentials();
-        });
-    options.AddPolicy("ProdCors", (corsBuilder) =>
-        {
-            corsBuilder.WithOrigins("https://flashcards-frontend.netlify.app")
-                .AllowAnyMethod()
-                .AllowAnyHeader()
-                .AllowCredentials();
-        });
+    options.AddPolicy("CorsPolicy", corsBuilder =>
+    {
+        corsBuilder.WithOrigins(
+            "http://localhost:5173",
+            "https://flashcards-frontend.netlify.app",
+            "https://dev--flashcards-frontend.netlify.app"
+        )
+        .AllowAnyMethod()
+        .AllowAnyHeader()
+        .AllowCredentials();
+    });
 });
 
 // Process forwarded headers from Render to identify the original client IP and HTTPS protocol
@@ -37,16 +34,12 @@ var app = builder.Build();
 
 app.UseForwardedHeaders(); // must be at the top of the pipeline
 
+app.UseCors("CorsPolicy");
+
 if (app.Environment.IsDevelopment())
 {
-    app.UseCors("DevCors");
     app.MapOpenApi();
     app.MapScalarApiReference();
-}
-else
-{
-    app.UseCors("ProdCors");
-    // app.UseHttpsRedirection();
 }
 
 app.UseAuthorization();
