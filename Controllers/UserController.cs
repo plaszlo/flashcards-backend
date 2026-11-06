@@ -1,6 +1,8 @@
 using System.Data;
 using Dapper;
 using FlashcardBackend.Data;
+using FlashcardBackend.Dtos;
+using FlashcardBackend.Helpers;
 using FlashcardBackend.Models;
 using Microsoft.AspNetCore.Mvc;
 
@@ -11,10 +13,12 @@ namespace FlashcardBackend.Controllers;
 public class UserController : ControllerBase
 {
     private readonly DataContextDapper _dapper;
+    private readonly SqlHelper _sqlHelper;
 
     public UserController(IConfiguration config)
     {
         _dapper = new DataContextDapper(config);
+        _sqlHelper = new SqlHelper(config);
     }
 
     [HttpGet("Users/{userId}")]
@@ -32,26 +36,22 @@ public class UserController : ControllerBase
         return _dapper.LoadData<User>(sql, sqlParam, CommandType.StoredProcedure);
     }
 
-    [HttpPut("UpsertUser")]
-    public IActionResult UpsertUser(User user)
+    [HttpPut("UpdateUser")]
+    public IActionResult UpdateUser(UserUpdateProfileDto userDetails)
     {
-        string sql = "spUsers_Upsert";
+        string sql = "spUsers_Update";
 
         DynamicParameters sqlParam = new DynamicParameters();
-        sqlParam.Add("@Name", user.Name);
-        sqlParam.Add("@Email", user.Email);
+        sqlParam.Add("@UserId", userDetails.UserId);
+        sqlParam.Add("@Name", userDetails.Name);
+        sqlParam.Add("@Email", userDetails.Email);
 
-        if(user.UserId != 0)
+        if (_dapper.ExecuteSql(sql, sqlParam, System.Data.CommandType.StoredProcedure))
         {
-            sqlParam.Add("@UserId", user.UserId);
+            return Ok();
         }
 
-        if(_dapper.ExecuteSql(sql, sqlParam, CommandType.StoredProcedure))
-        {
-            return Ok(new {message = "200 OK"});
-        }
-
-        throw new Exception("Failed to upsert user!");
+        throw new Exception("Failed to update user profile details!");
     }
 
     [HttpDelete("User/{userId}")]
