@@ -1,11 +1,11 @@
 namespace FlashcardBackend.Dtos;
 
-public class UserForLoginDto
+public class UserLoginDto
 {
     public string Email {get; set;}
     public string Password {get; set;}
 
-    public UserForLoginDto()
+    public UserLoginDto()
     {
         if(Email == null)
         {

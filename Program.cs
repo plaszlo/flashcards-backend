@@ -1,7 +1,11 @@
 using Microsoft.AspNetCore.HttpOverrides;
 using Scalar.AspNetCore;
+using Microsoft.AspNetCore.Identity;
+using FlashcardBackend.Models;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.AddScoped<IPasswordHasher<User>, PasswordHasher<User>>();
 
 builder.Services.AddControllers();
 

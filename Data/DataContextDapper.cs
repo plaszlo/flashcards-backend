@@ -12,6 +12,13 @@ public class DataContextDapper
         _config = config;
     }
 
+    public T? LoadDataSingle<T>(string sql, object parameters, CommandType commandType = CommandType.Text)
+    {
+        using IDbConnection dbConnection = new SqlConnection(_config.GetConnectionString("DefaultConnection"));
+
+        return dbConnection.QuerySingleOrDefault<T>(sql, parameters, commandType: commandType);
+    }
+
     public IEnumerable<T> LoadData<T>(string sql, object parameters, CommandType commandType = CommandType.Text)
     {
         using IDbConnection dbConnection = new SqlConnection(_config.GetConnectionString("DefaultConnection"));
