@@ -2,6 +2,9 @@ using Microsoft.AspNetCore.HttpOverrides;
 using Scalar.AspNetCore;
 using Microsoft.AspNetCore.Identity;
 using FlashcardBackend.Models;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -34,6 +37,26 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
         ForwardedHeaders.XForwardedProto;
 });
 
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters()
+        {
+            IssuerSigningKey = new SymmetricSecurityKey(
+                Encoding.UTF8.GetBytes(builder.Configuration.GetSection("AppSettings:TokenKey").Value 
+                    ?? throw new InvalidOperationException("JTW signing key is missing"))
+            ),
+            ValidateIssuer = true,
+            ValidIssuer = "FlashcardAPI",
+
+            ValidateAudience = true,
+            ValidAudience = "FlashcardAPI",
+
+            ValidateIssuerSigningKey = true,
+            ValidateLifetime = true
+        };
+    });
+
 var app = builder.Build();
 
 app.UseForwardedHeaders(); // must be at the top of the pipeline
@@ -46,6 +69,7 @@ if (app.Environment.IsDevelopment())
     app.MapScalarApiReference();
 }
 
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers(); 

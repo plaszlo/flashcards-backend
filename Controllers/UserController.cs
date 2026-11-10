@@ -4,6 +4,7 @@ using FlashcardBackend.Data;
 using FlashcardBackend.Dtos;
 using FlashcardBackend.Helpers;
 using FlashcardBackend.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace FlashcardBackend.Controllers;
@@ -21,6 +22,7 @@ public class UserController : ControllerBase
         _sqlHelper = new SqlHelper(config);
     }
 
+    [Authorize]
     [HttpGet("Users/{userId}")]
     public IEnumerable<User> GetUsers(int userId)
     {
@@ -54,13 +56,16 @@ public class UserController : ControllerBase
         throw new Exception("Failed to update user profile details!");
     }
 
-    [HttpDelete("User/{userId}")]
-    public IActionResult DeleteUser(int userId)
+
+    [HttpDelete("User")]
+    public IActionResult DeleteUser()
     {
+        string? userIdClaim = User.FindFirst("userId")?.Value;
+
         string sql = "spUsers_Delete";
 
         DynamicParameters sqlParams = new DynamicParameters();
-        sqlParams.Add("@UserId", userId);
+        sqlParams.Add("@UserId", userIdClaim);
 
         if(_dapper.ExecuteSql(sql, sqlParams, CommandType.StoredProcedure))
         {
@@ -69,5 +74,21 @@ public class UserController : ControllerBase
 
         throw new Exception("Failed to delete user!");
     }
+
+    // [HttpDelete("User/{userId}")]
+    // public IActionResult DeleteUser(int userId)
+    // {
+    //     string sql = "spUsers_Delete";
+
+    //     DynamicParameters sqlParams = new DynamicParameters();
+    //     sqlParams.Add("@UserId", userId);
+
+    //     if(_dapper.ExecuteSql(sql, sqlParams, CommandType.StoredProcedure))
+    //     {
+    //         return Ok();
+    //     }
+
+    //     throw new Exception("Failed to delete user!");
+    // }
 
 }

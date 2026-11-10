@@ -3,6 +3,7 @@ using FlashcardBackend.Data;
 using FlashcardBackend.Dtos;
 using FlashcardBackend.Helpers;
 using FlashcardBackend.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 
@@ -13,17 +14,18 @@ namespace FlashcardBackend.Controllers;
 public class AuthController : ControllerBase
 {
     private readonly DataContextDapper _dapper;
-    // private readonly AuthHelper _authHelper;
+    private readonly AuthHelper _authHelper;
     private readonly IPasswordHasher<User> _passwordHasher;
 
     public AuthController(IConfiguration config, IPasswordHasher<User> passwordHasher)
     {
         _dapper = new DataContextDapper(config);
         _passwordHasher = passwordHasher;
-        // _authHelper = new AuthHelper(config);
+        _authHelper = new AuthHelper(config);
     }
 
-    [HttpPost("/Register")]
+    [AllowAnonymous]
+    [HttpPost("Register")]
     public IActionResult RegisterUser(UserRegistrationDto regForm)
     {
         if(regForm.Password == regForm.PasswordConfirm)
@@ -69,10 +71,11 @@ public class AuthController : ControllerBase
         }
     }
 
-    [HttpPost("/Login")]
+    [AllowAnonymous]
+    [HttpPost("Login")]
     public IActionResult LoginUser(UserLoginDto loginForm)
     {
-        string sqlGetUser = "SELECT * FROM Users WHERE Email = @Email";
+        string sqlGetUser = "SELECT UserId, Email, PasswordHash FROM Users WHERE Email = @Email";
         
         User? user = _dapper.LoadDataSingle<User>(sqlGetUser, new { loginForm.Email });
 
@@ -106,7 +109,9 @@ public class AuthController : ControllerBase
             throw new Exception("Password match but failed to rehash!");
         }
 
-        return Ok();
+        return Ok(new Dictionary<string, string> {
+            {"token", _authHelper.CreateToken(user.UserId)}
+        });
     }
 
 }
