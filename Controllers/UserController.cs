@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace FlashcardBackend.Controllers;
 
+[Authorize]
 [ApiController]
 [Route("[controller]")]
 public class UserController : ControllerBase
@@ -22,7 +23,7 @@ public class UserController : ControllerBase
         _sqlHelper = new SqlHelper(config);
     }
 
-    [Authorize]
+    [AllowAnonymous]
     [HttpGet("Users/{userId}")]
     public IEnumerable<User> GetUsers(int userId)
     {
@@ -56,7 +57,6 @@ public class UserController : ControllerBase
         throw new Exception("Failed to update user profile details!");
     }
 
-
     [HttpDelete("User")]
     public IActionResult DeleteUser()
     {
@@ -72,23 +72,6 @@ public class UserController : ControllerBase
             return Ok();
         }
 
-        throw new Exception("Failed to delete user!");
+        throw new Exception($"Failed to delete user with id {userIdClaim}!");
     }
-
-    // [HttpDelete("User/{userId}")]
-    // public IActionResult DeleteUser(int userId)
-    // {
-    //     string sql = "spUsers_Delete";
-
-    //     DynamicParameters sqlParams = new DynamicParameters();
-    //     sqlParams.Add("@UserId", userId);
-
-    //     if(_dapper.ExecuteSql(sql, sqlParams, CommandType.StoredProcedure))
-    //     {
-    //         return Ok();
-    //     }
-
-    //     throw new Exception("Failed to delete user!");
-    // }
-
 }
