@@ -5,10 +5,12 @@ using FlashcardBackend.Models;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
+using FlashcardBackend.Data.Repositories;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddScoped<IPasswordHasher<User>, PasswordHasher<User>>();
+builder.Services.AddScoped<IUserRepository, UserRepository>();
 
 builder.Services.AddControllers();
 

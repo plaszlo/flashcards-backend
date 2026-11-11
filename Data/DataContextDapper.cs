@@ -7,29 +7,34 @@ namespace FlashcardBackend.Data;
 public class DataContextDapper
 {
     private readonly IConfiguration _config;
+
+    private readonly string _connectionString;
+
     public DataContextDapper(IConfiguration config)
     {
         _config = config;
+        _connectionString = config.GetConnectionString("DefaultConnection")
+            ?? throw new InvalidOperationException("Connection string not found.");
     }
 
-    public T? LoadDataSingle<T>(string sql, object parameters, CommandType commandType = CommandType.Text)
+    public async Task<T?> LoadDataSingleAsync<T>(string sql, object? parameters = null)
     {
-        using IDbConnection dbConnection = new SqlConnection(_config.GetConnectionString("DefaultConnection"));
+        using IDbConnection dbConnection = new SqlConnection(_connectionString);
 
-        return dbConnection.QuerySingleOrDefault<T>(sql, parameters, commandType: commandType);
+        return await dbConnection.QuerySingleOrDefaultAsync<T>(sql, parameters);
     }
 
-    public IEnumerable<T> LoadData<T>(string sql, object parameters, CommandType commandType = CommandType.Text)
+    public async Task<IEnumerable<T>> LoadDataAsync<T>(string sql, object? parameters = null)
     {
-        using IDbConnection dbConnection = new SqlConnection(_config.GetConnectionString("DefaultConnection"));
+        using IDbConnection dbConnection = new SqlConnection(_connectionString);
 
-        return dbConnection.Query<T>(sql, parameters, commandType: commandType);
+        return await dbConnection.QueryAsync<T>(sql, parameters);
     }
 
-    public bool ExecuteSql(string sql, object parameters, CommandType commandType = CommandType.Text)
+    public async Task<bool> ExecuteSqlAsync(string sql, object? parameters = null)
     {
-        using IDbConnection dbConnection = new SqlConnection(_config.GetConnectionString("DefaultConnection"));
+        using IDbConnection dbConnection = new SqlConnection(_connectionString);
         
-        return dbConnection.Execute(sql, parameters, commandType: commandType) > 0;
+        return await dbConnection.ExecuteAsync(sql, parameters) > 0;
     }
 }

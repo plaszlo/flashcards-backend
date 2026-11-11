@@ -1,5 +1,5 @@
-using Dapper;
 using FlashcardBackend.Data;
+using FlashcardBackend.Data.Repositories;
 using FlashcardBackend.Dtos;
 using FlashcardBackend.Helpers;
 using FlashcardBackend.Models;
@@ -14,51 +14,37 @@ namespace FlashcardBackend.Controllers;
 public class AuthController : ControllerBase
 {
     private readonly DataContextDapper _dapper;
-    private readonly AuthHelper _authHelper;
     private readonly IPasswordHasher<User> _passwordHasher;
+    private readonly AuthHelper _authHelper;
+    private readonly IUserRepository _userRepo;
 
-    public AuthController(IConfiguration config, IPasswordHasher<User> passwordHasher)
+    public AuthController(IConfiguration config, IPasswordHasher<User> passwordHasher, IUserRepository userRepo)
     {
         _dapper = new DataContextDapper(config);
         _passwordHasher = passwordHasher;
         _authHelper = new AuthHelper(config);
+        _userRepo = userRepo;
     }
 
     [AllowAnonymous]
     [HttpPost("Register")]
-    public IActionResult RegisterUser(UserRegistrationDto regForm)
+    public async Task<IActionResult> RegisterUser(UserRegistrationDto regForm)
     {
         if(regForm.Password == regForm.PasswordConfirm)
         {
             string sqlGetEmail = "SELECT * FROM Users WHERE Email = @Email";
 
-            IEnumerable<User> usersWithRegEmail = _dapper.LoadData<User>(sqlGetEmail, new {regForm.Email});
+            IEnumerable<User> usersWithRegEmail = await _dapper.LoadDataAsync<User>(sqlGetEmail, new {regForm.Email});
 
             if(usersWithRegEmail.Count() == 0)
             {
-                var user = new User
-                {
-                    Name = regForm.Name,
-                    Email = regForm.Email,
-                };
+                int userId = await _userRepo.AddUser(regForm);
 
-                user.PasswordHash = _passwordHasher.HashPassword(user, regForm.Password);
+                return Ok(new Dictionary<string, string>{
+                    {"token", _authHelper.CreateToken(userId)}
+                });
 
-                string sql = "spUsers_Register";
-
-                var sqlParamaters = new DynamicParameters();
-                sqlParamaters.Add("@Name", user.Name);
-                sqlParamaters.Add("@Email", user.Email);
-                sqlParamaters.Add("@PasswordHash", user.PasswordHash);
-
-                if (_dapper.ExecuteSql(sql, sqlParamaters, System.Data.CommandType.StoredProcedure))
-                {
-                    return Ok();
-                }
-                else
-                {
-                    throw new Exception("Failed to register user!");
-                }
+                throw new Exception("Failed to register user!");
             }
             else
             {
@@ -73,11 +59,11 @@ public class AuthController : ControllerBase
 
     [AllowAnonymous]
     [HttpPost("Login")]
-    public IActionResult LoginUser(UserLoginDto loginForm)
+    public async Task<IActionResult> LoginUser(UserLoginDto loginForm)
     {
         string sqlGetUser = "SELECT UserId, Email, PasswordHash FROM Users WHERE Email = @Email";
         
-        User? user = _dapper.LoadDataSingle<User>(sqlGetUser, new { loginForm.Email });
+        User? user = await _dapper.LoadDataSingleAsync<User>(sqlGetUser, new { loginForm.Email });
 
         if(user == null)
         {
@@ -93,19 +79,11 @@ public class AuthController : ControllerBase
 
         if (result == PasswordVerificationResult.SuccessRehashNeeded)
         {
-            user.PasswordHash = _passwordHasher.HashPassword(user, loginForm.Password);
-
-            string sqlUpdateHash = "UPDATE Users SET PasswordHash = @PasswordHash WHERE Email = @Email";
-
-            var sqlParameters = new DynamicParameters();
-            sqlParameters.Add("@PasswordHash", user.PasswordHash);
-            sqlParameters.Add("@Email", loginForm.Email);
-
-            if(_dapper.ExecuteSql(sqlUpdateHash, sqlParameters))
+            if(await _userRepo.RehashPassword(user, loginForm.Password))
             {
                 return Ok();
             }
-
+            
             throw new Exception("Password match but failed to rehash!");
         }
 

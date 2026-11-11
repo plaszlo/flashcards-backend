@@ -1,8 +1,5 @@
-using System.Data;
-using Dapper;
-using FlashcardBackend.Data;
+using FlashcardBackend.Data.Repositories;
 using FlashcardBackend.Dtos;
-using FlashcardBackend.Helpers;
 using FlashcardBackend.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -14,42 +11,24 @@ namespace FlashcardBackend.Controllers;
 [Route("[controller]")]
 public class UserController : ControllerBase
 {
-    private readonly DataContextDapper _dapper;
-    private readonly SqlHelper _sqlHelper;
+    private readonly IUserRepository _userRepo;
 
-    public UserController(IConfiguration config)
+    public UserController(IUserRepository userRepo)
     {
-        _dapper = new DataContextDapper(config);
-        _sqlHelper = new SqlHelper(config);
+        _userRepo = userRepo;
     }
 
     [AllowAnonymous]
     [HttpGet("Users/{userId}")]
-    public IEnumerable<User> GetUsers(int userId)
+    public async Task<IEnumerable<User>> GetUsers(int userId = 0)
     {
-        string sql = "spUsers_Get";
-
-        DynamicParameters sqlParam = new DynamicParameters();
-
-        if(userId != 0)
-        {
-            sqlParam.Add("@UserId", userId);
-        }
-
-        return _dapper.LoadData<User>(sql, sqlParam, CommandType.StoredProcedure);
+        return await _userRepo.GetUsersAsync(userId);
     }
 
     [HttpPut("UpdateUser")]
-    public IActionResult UpdateUser(UserUpdateProfileDto userDetails)
+    public async Task<IActionResult> UpdateUser(UserUpdateProfileDto userDetails)
     {
-        string sql = "spUsers_Update";
-
-        DynamicParameters sqlParam = new DynamicParameters();
-        sqlParam.Add("@UserId", userDetails.UserId);
-        sqlParam.Add("@Name", userDetails.Name);
-        sqlParam.Add("@Email", userDetails.Email);
-
-        if (_dapper.ExecuteSql(sql, sqlParam, System.Data.CommandType.StoredProcedure))
+        if (await _userRepo.UpdateUser(userDetails))
         {
             return Ok();
         }
@@ -58,20 +37,19 @@ public class UserController : ControllerBase
     }
 
     [HttpDelete("User")]
-    public IActionResult DeleteUser()
+    public async Task<IActionResult> DeleteUser()
     {
         string? userIdClaim = User.FindFirst("userId")?.Value;
+        if(!int.TryParse(userIdClaim, out int userId))
+        {
+            return Unauthorized("Invalid or missing User ID claim");
+        }
 
-        string sql = "spUsers_Delete";
-
-        DynamicParameters sqlParams = new DynamicParameters();
-        sqlParams.Add("@UserId", userIdClaim);
-
-        if(_dapper.ExecuteSql(sql, sqlParams, CommandType.StoredProcedure))
+        if(await _userRepo.DeleteUser(userId))
         {
             return Ok();
         }
 
-        throw new Exception($"Failed to delete user with id {userIdClaim}!");
+        throw new Exception($"Failed to delete user with id {userId}!");
     }
 }
