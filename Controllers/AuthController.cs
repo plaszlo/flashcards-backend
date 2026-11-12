@@ -30,30 +30,34 @@ public class AuthController : ControllerBase
     [HttpPost("Register")]
     public async Task<IActionResult> RegisterUser(UserRegistrationDto regForm)
     {
-        if(regForm.Password == regForm.PasswordConfirm)
+        if(regForm.Password != regForm.PasswordConfirm)
         {
-            string sqlGetEmail = "SELECT * FROM Users WHERE Email = @Email";
-
-            IEnumerable<User> usersWithRegEmail = await _dapper.LoadDataAsync<User>(sqlGetEmail, new {regForm.Email});
-
-            if(usersWithRegEmail.Count() == 0)
+            return BadRequest(new ProblemDetails
             {
-                int userId = await _userRepo.AddUser(regForm);
+                Detail = "Passwords don't match!"
+            });
+        }
 
-                return Ok(new Dictionary<string, string>{
-                    {"token", _authHelper.CreateToken(userId)}
-                });
+        string sqlGetEmail = "SELECT * FROM Users WHERE Email = @Email";
 
-                throw new Exception("Failed to register user!");
-            }
-            else
-            {
-                throw new Exception("Email already exists!");
-            }
+        IEnumerable<User> usersWithRegEmail = await _dapper.LoadDataAsync<User>(sqlGetEmail, new {regForm.Email});
+
+        if(usersWithRegEmail.Count() == 0)
+        {
+            int userId = await _userRepo.AddUser(regForm);
+
+            return Ok(new Dictionary<string, string>{
+                {"token", _authHelper.CreateToken(userId)}
+            });
+
+            throw new Exception("Failed to register user!");
         }
         else
         {
-            throw new Exception("Passwords don't match!");
+            return Conflict(new ProblemDetails
+            {
+                Detail = "Email already exists!"
+            });
         }
     }
 
@@ -67,14 +71,20 @@ public class AuthController : ControllerBase
 
         if(user == null)
         {
-            return Unauthorized("Email or Password doesn't match!");
+            return NotFound(new ProblemDetails
+            {
+                Detail = "Email not found!"
+            });
         }
 
         var result = _passwordHasher.VerifyHashedPassword(user, user.PasswordHash, loginForm.Password);
 
         if(result == PasswordVerificationResult.Failed)
         {
-            return Unauthorized("Email or Password doesn't match!");
+            return Unauthorized(new ProblemDetails
+            {
+                Detail = "Email or Password doesn't match!"
+            });
         }
 
         if (result == PasswordVerificationResult.SuccessRehashNeeded)

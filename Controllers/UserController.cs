@@ -28,7 +28,7 @@ public class UserController : ControllerBase
     [HttpPut("UpdateUser")]
     public async Task<IActionResult> UpdateUser(UserUpdateProfileDto userDetails)
     {
-        if (await _userRepo.UpdateUser(userDetails))
+        if (await _userRepo.UpdateUser(User, userDetails))
         {
             return Ok();
         }
@@ -39,17 +39,11 @@ public class UserController : ControllerBase
     [HttpDelete("User")]
     public async Task<IActionResult> DeleteUser()
     {
-        string? userIdClaim = User.FindFirst("userId")?.Value;
-        if(!int.TryParse(userIdClaim, out int userId))
-        {
-            return Unauthorized("Invalid or missing User ID claim");
-        }
-
-        if(await _userRepo.DeleteUser(userId))
+        if(await _userRepo.DeleteUser(User))
         {
             return Ok();
         }
 
-        throw new Exception($"Failed to delete user with id {userId}!");
+        throw new Exception("Failed to delete user with id!");
     }
 }

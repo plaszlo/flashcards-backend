@@ -2,6 +2,7 @@ using Dapper;
 using FlashcardBackend.Dtos;
 using FlashcardBackend.Models;
 using Microsoft.AspNetCore.Identity;
+using System.Security.Claims;
 
 namespace FlashcardBackend.Data.Repositories;
 
@@ -27,8 +28,11 @@ public class UserRepository : IUserRepository
         return await _dapper.LoadDataAsync<User>(sql, new { UserId = userId });
     }
 
-    public async Task<bool> UpdateUser(UserUpdateProfileDto userData)
+    public async Task<bool> UpdateUser(ClaimsPrincipal user, UserUpdateProfileDto userData)
     {
+        string? claimValue = user.FindFirst("userId")?.Value;
+        int.TryParse(claimValue, out int userId);
+
         string sql = @"
             UPDATE Users
             SET Name = @Name,
@@ -38,13 +42,16 @@ public class UserRepository : IUserRepository
         var sqlParams = new DynamicParameters();
         sqlParams.Add("@Name", userData.Name);
         sqlParams.Add("@Email", userData.Email);
-        sqlParams.Add("@UserId", userData.UserId);
+        sqlParams.Add("@UserId", userId);
 
         return await _dapper.ExecuteSqlAsync(sql, sqlParams);
     }
 
-    public async Task<bool> DeleteUser(int userId)
+    public async Task<bool> DeleteUser(ClaimsPrincipal user)
     {
+        string? claimValue = user.FindFirst("userId")?.Value;
+        int.TryParse(claimValue, out int userId);
+
         string sql = "DELETE FROM Users WHERE UserId = @UserId";
 
         return await _dapper.ExecuteSqlAsync(sql, new {userId});
