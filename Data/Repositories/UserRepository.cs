@@ -27,6 +27,13 @@ public class UserRepository : IUserRepository
         const string sql = "SELECT * FROM Users WHERE UserId = @UserId";
         return await _dapper.LoadDataAsync<User>(sql, new { UserId = userId });
     }
+    
+    public async Task<User?> GetUserByEmail(string email)
+    {
+        string sql = "SELECT * FROM Users WHERE Email = @Email";
+
+        return await _dapper.LoadDataSingleAsync<User>(sql, new { email });
+    }
 
     public async Task<bool> UpdateUser(ClaimsPrincipal user, UserUpdateProfileDto userData)
     {

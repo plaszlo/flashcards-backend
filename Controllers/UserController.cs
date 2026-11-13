@@ -28,12 +28,25 @@ public class UserController : ControllerBase
     [HttpPut("UpdateUser")]
     public async Task<IActionResult> UpdateUser(UserUpdateProfileDto userDetails)
     {
-        if (await _userRepo.UpdateUser(User, userDetails))
+        User? user = await _userRepo.GetUserByEmail(userDetails.Email);
+
+        if(user != null)
         {
-            return Ok();
+            return Conflict(new ProblemDetails
+            {
+                Detail = "Email is already taken!"
+            });
         }
 
-        throw new Exception("Failed to update user profile details!");
+        if (await _userRepo.UpdateUser(User, userDetails))
+        {
+            return Ok(new {});
+        }
+
+        return NotFound(new ProblemDetails
+        {
+            Detail = "User not found!"
+        });
     }
 
     [HttpDelete("User")]
@@ -41,9 +54,12 @@ public class UserController : ControllerBase
     {
         if(await _userRepo.DeleteUser(User))
         {
-            return Ok();
+            return Ok(new {});
         }
 
-        throw new Exception("Failed to delete user with id!");
+        return NotFound(new ProblemDetails
+        {
+            Detail = "User not found!"
+        });
     }
 }

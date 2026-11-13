@@ -38,11 +38,9 @@ public class AuthController : ControllerBase
             });
         }
 
-        string sqlGetEmail = "SELECT * FROM Users WHERE Email = @Email";
+        User? user = await _userRepo.GetUserByEmail(regForm.Email);
 
-        IEnumerable<User> usersWithRegEmail = await _dapper.LoadDataAsync<User>(sqlGetEmail, new {regForm.Email});
-
-        if(usersWithRegEmail.Count() == 0)
+        if(user == null)
         {
             int userId = await _userRepo.AddUser(regForm);
 
@@ -64,10 +62,8 @@ public class AuthController : ControllerBase
     [AllowAnonymous]
     [HttpPost("Login")]
     public async Task<IActionResult> LoginUser(UserLoginDto loginForm)
-    {
-        string sqlGetUser = "SELECT UserId, Email, PasswordHash FROM Users WHERE Email = @Email";
-        
-        User? user = await _dapper.LoadDataSingleAsync<User>(sqlGetUser, new { loginForm.Email });
+    {        
+        User? user = await _userRepo.GetUserByEmail(loginForm.Email);
 
         if(user == null)
         {
@@ -101,5 +97,4 @@ public class AuthController : ControllerBase
             {"token", _authHelper.CreateToken(user.UserId)}
         });
     }
-
 }
