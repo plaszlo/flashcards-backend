@@ -1,73 +1,65 @@
-using System.Data;
-using Dapper;
-using FlashcardBackend.Data;
+using FlashcardBackend.Data.Repositories;
+using FlashcardBackend.Dtos;
 using FlashcardBackend.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace FlashcardBackend.Controllers;
 
+[Authorize]
 [ApiController]
 [Route("[controller]")]
 public class UserController : ControllerBase
 {
-    private readonly DataContextDapper _dapper;
+    private readonly IUserRepository _userRepo;
 
-    public UserController(IConfiguration config)
+    public UserController(IUserRepository userRepo)
     {
-        _dapper = new DataContextDapper(config);
+        _userRepo = userRepo;
     }
 
+    [AllowAnonymous]
     [HttpGet("Users/{userId}")]
-    public IEnumerable<User> GetUsers(int userId)
+    public async Task<IEnumerable<User>> GetUsers(int userId = 0)
     {
-        string sql = "spUsers_Get";
-
-        DynamicParameters sqlParam = new DynamicParameters();
-
-        if(userId != 0)
-        {
-            sqlParam.Add("@UserId", userId);
-        }
-
-        return _dapper.LoadData<User>(sql, sqlParam, CommandType.StoredProcedure);
+        return await _userRepo.GetUsersAsync(userId);
     }
 
-    [HttpPut("UpsertUser")]
-    public IActionResult UpsertUser(User user)
+    [HttpPut("UpdateUser")]
+    public async Task<IActionResult> UpdateUser(UserUpdateProfileDto userDetails)
     {
-        string sql = "spUsers_Upsert";
+        User? user = await _userRepo.GetUserByEmail(userDetails.Email);
 
-        DynamicParameters sqlParam = new DynamicParameters();
-        sqlParam.Add("@Name", user.Name);
-        sqlParam.Add("@Email", user.Email);
-
-        if(user.UserId != 0)
+        if(user != null)
         {
-            sqlParam.Add("@UserId", user.UserId);
+            return Conflict(new ProblemDetails
+            {
+                Detail = "Email is already taken!"
+            });
         }
 
-        if(_dapper.ExecuteSql(sql, sqlParam, CommandType.StoredProcedure))
+        if (await _userRepo.UpdateUser(User, userDetails))
         {
-            return Ok(new {message = "200 OK"});
+            return Ok(new {});
         }
 
-        throw new Exception("Failed to upsert user!");
+        return NotFound(new ProblemDetails
+        {
+            Detail = "User not found!"
+        });
     }
 
-    [HttpDelete("User/{userId}")]
-    public IActionResult DeleteUser(int userId)
+    [HttpDelete("User")]
+    public async Task<IActionResult> DeleteUser()
     {
-        string sql = "spUsers_Delete";
-
-        DynamicParameters sqlParams = new DynamicParameters();
-        sqlParams.Add("@UserId", userId);
-
-        if(_dapper.ExecuteSql(sql, sqlParams, CommandType.StoredProcedure))
+        if(await _userRepo.DeleteUser(User))
         {
-            return Ok();
+            return Ok(new {});
         }
 
-        throw new Exception("Failed to delete user!");
+        return NotFound(new ProblemDetails
+        {
+            Detail = "User not found!"
+        });
     }
-
 }

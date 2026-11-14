@@ -5,6 +5,7 @@ public class User
     public int UserId {get; set;}
     public string Name {get; set;}
     public string Email {get; set;}
+    public string PasswordHash {get; set;}
 
     public User()
     {
@@ -16,6 +17,11 @@ public class User
         if(Email == null)
         {
             Email = "";
+        }
+
+        if(PasswordHash == null)
+        {
+            PasswordHash = "";
         }
     }
 }
