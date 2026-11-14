@@ -1,5 +1,5 @@
 using FlashcardBackend.Data;
-using FlashcardBackend.Data.Repositories;
+using FlashcardBackend.Data.Interfaces;
 using FlashcardBackend.Dtos;
 using FlashcardBackend.Helpers;
 using FlashcardBackend.Models;

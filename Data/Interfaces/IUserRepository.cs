@@ -2,7 +2,7 @@ using System.Security.Claims;
 using FlashcardBackend.Dtos;
 using FlashcardBackend.Models;
 
-namespace FlashcardBackend.Data.Repositories;
+namespace FlashcardBackend.Data.Interfaces;
 
 public interface IUserRepository
 {

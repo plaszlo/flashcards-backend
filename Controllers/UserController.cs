@@ -1,4 +1,4 @@
-using FlashcardBackend.Data.Repositories;
+using FlashcardBackend.Data.Interfaces;
 using FlashcardBackend.Dtos;
 using FlashcardBackend.Models;
 using Microsoft.AspNetCore.Authorization;
