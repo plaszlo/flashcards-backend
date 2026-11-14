@@ -34,7 +34,7 @@ public class AuthHelper
         {
             Subject = new ClaimsIdentity(claims),
             SigningCredentials = credentials,
-            Expires = DateTime.UtcNow.AddDays(1),
+            Expires = DateTime.UtcNow.AddHours(3),
 
             Issuer = "FlashcardAPI",
             Audience = "FlashcardAPI"
