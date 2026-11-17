@@ -26,7 +26,7 @@ public class CardRepository : ICardRepository
         return await _dapper.LoadDataAsync<Card>(sql, new {userId});
     }
 
-    public async Task<bool> AddCard(ClaimsPrincipal user, CardContentDto cardContent)
+    public async Task<Card?> AddCard(ClaimsPrincipal user, CardContentDto cardContent)
     {
         string? claimValue = user.FindFirst("userId")?.Value;
         int.TryParse(claimValue, out int userId);
@@ -34,7 +34,9 @@ public class CardRepository : ICardRepository
         string sql = @"
             INSERT INTO Cards (
                 UserId, Term, Definition
-            ) VALUES (
+            ) 
+            OUTPUT INSERTED.*
+            VALUES (
                 @UserId, @Term, @Definition
             )
         ";
@@ -44,7 +46,7 @@ public class CardRepository : ICardRepository
         sqlParams.Add("@Term", cardContent.Term);
         sqlParams.Add("@Definition", cardContent.Definition);
 
-        return await _dapper.ExecuteSqlAsync(sql, sqlParams);
+        return await _dapper.LoadDataSingleAsync<Card>(sql, sqlParams);
     }
 
     public async Task<bool> EditCard(ClaimsPrincipal user, CardContentDto cardContent, int cardId)

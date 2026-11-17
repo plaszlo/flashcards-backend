@@ -43,13 +43,12 @@ public class CardController : ControllerBase
     }
 
     [HttpPost()]
-    public async Task<IActionResult> AddCard(CardContentDto cardContent)
+    public async Task<Card> AddCard(CardContentDto cardContent)
     {
-       
-        if(await _cardRepo.AddCard(User, cardContent))
-        {
-            return Ok(new {});
-        }
+        Card? newCard = await _cardRepo.AddCard(User, cardContent);
+
+        if(newCard != null)
+            return newCard;
 
         throw new Exception("Failed to add new card!");
     }
@@ -59,7 +58,7 @@ public class CardController : ControllerBase
     {
         if(await _cardRepo.EditCard(User, cardContent, cardId))
         {
-            return Ok(new {});
+            return NoContent();
         }
 
         throw new Exception("Failed to update card!");
@@ -70,7 +69,7 @@ public class CardController : ControllerBase
     {
         if(await _cardRepo.DeleteCard(User, cardId))
         {
-            return Ok(new {});
+            return NoContent();
         }
 
         throw new Exception("Failed to delete card!");
