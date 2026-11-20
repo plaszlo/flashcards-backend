@@ -31,13 +31,15 @@ public class CardRepository : ICardRepository
         string? claimValue = user.FindFirst("userId")?.Value;
         int.TryParse(claimValue, out int userId);
 
+        DateOnly nextReview = DateOnly.FromDateTime(DateTime.Today).AddDays(Random.Shared.Next(2, 4));
+
         string sql = @"
             INSERT INTO Cards (
-                UserId, Term, Definition
+                UserId, Term, Definition, NextReview
             ) 
             OUTPUT INSERTED.*
             VALUES (
-                @UserId, @Term, @Definition
+                @UserId, @Term, @Definition, @NextReview
             )
         ";
 
@@ -45,6 +47,7 @@ public class CardRepository : ICardRepository
         sqlParams.Add("@UserId", userId);
         sqlParams.Add("@Term", cardContent.Term);
         sqlParams.Add("@Definition", cardContent.Definition);
+        sqlParams.Add("@NextReview", nextReview);
 
         return await _dapper.LoadDataSingleAsync<Card>(sql, sqlParams);
     }
@@ -82,5 +85,21 @@ public class CardRepository : ICardRepository
         sqlParams.Add("@UserId", userId);
 
         return await _dapper.ExecuteSqlAsync(sql, sqlParams);
+    }
+
+    public async Task<IEnumerable<Card>> GetPracticeCards(ClaimsPrincipal user)
+    {
+        string? claimValue = user.FindFirst("userId")?.Value;
+        int.TryParse(claimValue, out int userId);
+
+        string sql = @"
+            SELECT * FROM Cards
+            WHERE UserId = @UserId
+            AND NextReview >= CAST(GETUTCDATE() AS DATE)
+            AND NextReview <= DATEADD(WEEK, 3, CAST(GETUTCDATE() AS DATE))
+            ORDER BY NextReview ASC
+        ";
+
+        return await _dapper.LoadDataAsync<Card>(sql, new { userId });
     }
 }

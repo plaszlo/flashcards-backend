@@ -74,4 +74,10 @@ public class CardController : ControllerBase
 
         throw new Exception("Failed to delete card!");
     }
+
+    [HttpPatch("GetPracticeCards")]
+    public async Task<IEnumerable<Card>> GetPracticeCards(int cardId)
+    {
+        return await _cardRepo.GetPracticeCards(User);
+    }
 }

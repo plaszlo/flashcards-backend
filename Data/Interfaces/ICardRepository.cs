@@ -10,4 +10,5 @@ public interface ICardRepository
     public Task<Card?> AddCard(ClaimsPrincipal user, CardContentDto cardContent);
     public Task<bool> EditCard(ClaimsPrincipal user, CardContentDto cardContent, int cardId);
     public Task<bool> DeleteCard(ClaimsPrincipal user, int cardId);
+    public Task<IEnumerable<Card>> GetPracticeCards(ClaimsPrincipal user);
 }
